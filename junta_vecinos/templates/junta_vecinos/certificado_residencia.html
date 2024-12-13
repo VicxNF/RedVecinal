@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificado de Residencia</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap');
+        
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .certificado-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            border: 2px solid #003366;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            position: relative;
+        }
+        
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #003366;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #003366;
+            margin: 0;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .header p {
+            margin: 10px 0 0;
+            font-size: 16px;
+            color: #666;
+        }
+        
+        .title {
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            color: #003366;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .content {
+            text-align: justify;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .detail {
+            border-bottom: 1px dotted #003366;
+            display: inline-block;
+            font-weight: bold;
+        }
+        
+        .signature {
+            margin-top: 50px;
+            text-align: center;
+            padding-top: 20px;
+        }
+        
+        .signature-image {
+            max-width: 200px;
+            max-height: 100px;
+            margin: 10px 0;
+        }
+        
+        .signature-line {
+            width: 250px;
+            border-top: 1px solid #003366;
+            margin: 10px auto;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-style: italic;
+            color: #666;
+        }
+        
+        .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            color: rgba(0, 51, 102, 0.1);
+            font-size: 100px;
+            font-weight: bold;
+            z-index: 1;
+        }
+        
+        .sello {
+            position: absolute;
+            bottom: 100px;
+            right: 50px;
+            opacity: 0.7;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="certificado-container">
+        <div class="watermark">CERTIFICADO</div>
+        
+        <div class="header">
+            <h1>"{{ junta_nombre }}"</h1>
+            <p>{{ comuna }}, Región {{ region }}</p>
+        </div>
+
+        <div class="title">CERTIFICADO DE RESIDENCIA</div>
+
+        <div class="content">
+            <p>Yo, <span class="detail">{{ presidente_nombre }}</span>, Cédula Nacional de Identidad N° <span class="detail">{{ presidente_ci }}</span>, en calidad de Presidente de la Junta de Vecinos <span class="detail">{{ junta_nombre }}</span>, de la comuna de <span class="detail">{{ comuna }}</span>,</p>
+
+            <p><strong>CERTIFICO</strong></p>
+
+            <p>Que <span class="detail">{{ vecino.nombres }} {{ vecino.apellidos }}</span>, portador de la Cédula Nacional de Identidad N° <span class="detail">{{ vecino.rut }}</span>, domiciliado en <span class="detail">{{ vecino.direccion }}</span>, de la comuna de <span class="detail">{{ vecino.comuna }}</span>, Región <span class="detail">{{ region }}</span>, se encuentra registrado como residente en el territorio donde esta Junta de Vecinos desarrolla sus funciones.</p>
+
+            <p>El presente certificado se otorga a petición del interesado para los fines legales y administrativos que estime convenientes.</p>
+        </div>
+
+        <div class="signature">
+            {% if firma_base64 %}
+            <img src="data:image/png;base64,{{ firma_base64 }}" alt="Firma del Presidente" class="signature-image" style="max-width: 200px; max-height: 100px; display: block; margin: 0 auto;">
+            {% else %}
+            <div class="signature-line"></div>
+            {% endif %}
+            <p>Presidente Junta de Vecinos</p>
+            <p>Cédula Nacional de Identidad N° {{ presidente_ci }}</p>
+        </div>
+
+        <div class="footer">
+            <p>Emitido en {{ comuna }}, con fecha {{ fecha_emision }}</p>
+            <p>Número de Certificado: {{ numero_certificado }}</p>
+        </div>
+    </div>
+</body>
+</html>

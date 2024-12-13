@@ -1,0 +1,369 @@
+{% extends 'junta_vecinos/base.html' %}
+
+{% load custom_filters %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Header con animación suave -->
+    <div class="row mb-4 animate__animated animate__fadeIn">
+        <div class="col-12">
+            <h2 class="text-primary border-bottom pb-2">
+                Reservas de Espacios - {{ comuna }}
+                <small class="text-muted fs-5">Sistema de Reservas</small>
+            </h2>
+        </div>
+    </div>
+
+    <!-- Cards de Estadísticas con hover effects -->
+    <div class="row mb-4">
+        <div class="col-md-4 animate__animated animate__fadeInUp">
+            <div class="card shadow-sm hover-card">
+                <div class="card-body text-center">
+                    <div class="display-4 mb-2">
+                        <i class="fas fa-calendar-check text-primary"></i>
+                    </div>
+                    <h5 class="text-muted">Total Reservas</h5>
+                    <div class="counter display-6 text-primary">{{ reservas|length }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 animate__animated animate__fadeInUp" style="animation-delay: 0.2s">
+            <div class="card shadow-sm hover-card">
+                <div class="card-body text-center">
+                    <div class="display-4 mb-2">
+                        <i class="fas fa-door-open text-success"></i>
+                    </div>
+                    <h5 class="text-muted">Espacios Activos</h5>
+                    <div class="counter display-6 text-success">{{ espacios|length }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 animate__animated animate__fadeInUp" style="animation-delay: 0.4s">
+            <div class="card shadow-sm hover-card">
+                <div class="card-body text-center">
+                    <div class="display-4 mb-2">
+                        <i class="fas fa-dollar-sign text-info"></i>
+                    </div>
+                    <h5 class="text-muted">Ingresos Totales</h5>
+                    <div class="counter display-6 text-info">${{ total_ingresos|floatformat:2 }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos y Reportes -->
+    <div class="row mb-4">
+        <div class="col-lg-8 animate__animated animate__fadeInLeft">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">Tendencia Mensual
+                        <button class="btn btn-sm btn-outline-primary float-end" 
+                                data-bs-toggle="tooltip" 
+                                title="Ver detalles">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <canvas id="tendenciaChart" style="height: 300px;"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 animate__animated animate__fadeInRight">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">Generar Reportes</h4>
+                </div>
+                <div class="card-body">
+                    <form method="get" action="{% url 'generar_reporte_pdf' %}" class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Período de Reporte</label>
+                            <div class="input-group mb-3">
+                                <select name="year" id="year" class="form-select">
+                                    {% for year in years %}
+                                    <option value="{{ year }}" {% if year == current_year %}selected{% endif %}>
+                                        {{ year }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <select name="month" id="month" class="form-select">
+                                    {% for month_num, month_name in months %}
+                                    <option value="{{ month_num }}" {% if month_num == current_month %}selected{% endif %}>
+                                        {{ month_name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary w-100 mb-2 btn-hover">
+                                <i class="fas fa-file-pdf me-2"></i>Generar PDF
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grid de Reservas -->
+    <div class="row" id="reservas-grid">
+        {% for reserva in reservas %}
+        <div class="col-md-4 mb-4 animate__animated animate__fadeIn" style="animation-delay: {{ forloop.counter0|multiply:0.1 }}s">
+            <div class="card h-100 shadow-sm reservation-card">
+                <div class="card-body">
+                    <h5 class="card-title text-primary">{{ reserva.espacio.nombre }}</h5>
+                    
+                    <div class="reservation-details">
+                        <div class="detail-item">
+                            <i class="fas fa-calendar-day text-primary"></i>
+                            <span>{{ reserva.fecha|date:"d/m/Y" }}</span>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-clock text-primary"></i>
+                            <span>{{ reserva.hora_inicio|time:"H:i" }} - {{ reserva.hora_fin|time:"H:i" }}</span>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-user text-primary"></i>
+                            <span>{{ reserva.usuario.get_full_name }}</span>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-dollar-sign text-primary"></i>
+                            <span>${{ reserva.monto_pagado|floatformat:2 }}</span>
+                        </div>
+                    </div>
+                    <div class="card-footer d-flex justify-content-between align-items-center">
+                        <form method="post" class="w-100">
+                            {% csrf_token %}
+                            <input type="hidden" name="reserva_id" value="{{ reserva.id }}">
+                            <button type="submit" name="eliminar_reserva" 
+                                    class="btn btn-danger btn-sm w-100 btn-hover"
+                                    onclick="return confirm('¿Estás seguro de que deseas eliminar esta reserva?');">
+                                <i class="fas fa-trash me-2"></i>Terminar Reserva
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <div class="empty-state animate__animated animate__fadeIn">
+                <i class="fas fa-calendar-times display-1 text-muted mb-3"></i>
+                <h3 class="text-muted">No hay reservas registradas</h3>
+                <p class="text-muted">Las reservas aparecerán aquí cuando sean creadas.</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Estilos adicionales -->
+<style>
+    .hover-card {
+        transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+    }
+
+    .hover-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    }
+
+    .reservation-card {
+        transition: all 0.3s ease;
+        border: none;
+        overflow: hidden;
+    }
+
+    .reservation-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    }
+
+    .reservation-details {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin: 1rem 0;
+    }
+
+    .detail-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #6c757d;
+    }
+
+    .detail-item i {
+        width: 20px;
+    }
+
+    .btn-hover {
+        transition: all 0.3s ease;
+    }
+
+    .btn-hover:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.15);
+    }
+
+    .empty-state {
+        padding: 3rem;
+    }
+
+    .counter {
+        transition: all 0.5s ease;
+    }
+
+    @media (max-width: 768px) {
+        .card-footer .btn-group {
+            flex-direction: column;
+        }
+        
+        .card-footer .btn {
+            margin-bottom: 0.5rem;
+        }
+    }
+</style>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Configuración del gráfico
+    const ctxTendencia = document.getElementById('tendenciaChart').getContext('2d');
+    new Chart(ctxTendencia, {
+        type: 'line',
+        data: {
+            labels: {{ meses|safe }},
+            datasets: [{
+                label: 'Reservas',
+                data: {{ reservas_mensuales|safe }},
+                borderColor: 'rgba(75, 192, 192, 1)',
+                backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                tension: 0.4,
+                fill: true
+            }, {
+                label: 'Ingresos ($)',
+                data: {{ ingresos_mensuales|safe }},
+                borderColor: 'rgba(54, 162, 235, 1)',
+                backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                tension: 0.4,
+                fill: true,
+                yAxisID: 'y1'
+            }]
+        },
+        options: {
+            responsive: true,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    titleColor: '#000',
+                    bodyColor: '#000',
+                    borderColor: '#ddd',
+                    borderWidth: 1,
+                    padding: 10,
+                    boxPadding: 5
+                }
+            },
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    grid: {
+                        drawBorder: false,
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    grid: {
+                        drawOnChartArea: false,
+                    }
+                },
+                x: {
+                    grid: {
+                        drawBorder: false,
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+
+    // Función para generar reportes Excel
+    function generarReporteReservas() {
+        const year = document.getElementById('year').value;
+        const month = document.getElementById('month').value;
+        
+        // Mostrar indicador de carga
+        Swal.fire({
+            title: 'Generando reporte',
+            html: 'Por favor espera...',
+            timer: 2000,
+            timerProgressBar: true,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        }).then(() => {
+            window.location.href = `{% url 'generar_reporte_pdf' %}?year=${year}&month=${month}`;
+        });
+    }
+
+    document.querySelector('form [type="submit"]').addEventListener('click', function(e) {
+        e.preventDefault();
+        generarReporteReservas();
+    });
+
+    // Inicializar tooltips de Bootstrap
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+
+    // Animación de contadores
+    function animateValue(obj, start, end, duration) {
+        let startTimestamp = null;
+        const step = (timestamp) => {
+            if (!startTimestamp) startTimestamp = timestamp;
+            const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+            obj.innerHTML = Math.floor(progress * (end - start) + start);
+            if (progress < 1) {
+                window.requestAnimationFrame(step);
+            }
+        };
+        window.requestAnimationFrame(step);
+    }
+
+    // Animar contadores cuando son visibles
+    const observerOptions = {
+        threshold: 0.1
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const counter = entry.target;
+                const finalValue = parseInt(counter.innerText);
+                animateValue(counter, 0, finalValue, 2000);
+                observer.unobserve(counter);
+            }
+        });
+    }, observerOptions);
+
+    document.querySelectorAll('.counter').forEach(counter => {
+        observer.observe(counter);
+    });
+</script>
+{% endblock %}
